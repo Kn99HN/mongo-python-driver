@@ -387,6 +387,13 @@ class ClientSession(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._end_session(lock=True)
+    
+    def _check_support_transaction(self):
+        server_version = self._client.server_info()['version']
+        if (server_version < "4.0.0" or 
+            (server_version == "4.0.0" and self._client.is_mongos)):
+            raise InvalidOperation(
+                "transaction is not supported by the connected server version")
 
     @property
     def client(self):
@@ -569,6 +576,8 @@ class ClientSession(object):
         .. versionadded:: 3.7
         """
         self._check_ended()
+
+        self._check_support_transaction()
 
         if self.in_transaction:
             raise InvalidOperation("Transaction already in progress")
